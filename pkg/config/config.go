@@ -2,13 +2,21 @@ package config
 
 import (
 	"bufio"
+	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 )
 
-func LoadEnv(filename string) (err error) {
+type DbConfig struct {
+	ConnString  string
+	MaxConns    int
+	ConnTimeout int
+}
+
+func LoadEnv(filename string) (config *DbConfig, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		eMsg := "error reading .env file"
@@ -41,8 +49,33 @@ func LoadEnv(filename string) (err error) {
 
 		// Set the environment variable
 		if err := os.Setenv(key, value); err != nil {
-			return err
+			eMsg := "set env error in .env file"
+			err = errors.Wrap(err, eMsg)
+			return nil, err
 		}
 	}
-	return nil
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"), os.Getenv("DB_NAME"), os.Getenv("DB_SSLMODE"))
+
+	maxConns, err := strconv.Atoi(os.Getenv("DB_MAXCONNS"))
+	if err != nil {
+		eMsg := "convert maxconns error in .env file"
+		err = errors.Wrap(err, eMsg)
+		return nil, err
+	}
+	conTimeout, err := strconv.Atoi(os.Getenv("DB_TIMEOUT"))
+	if err != nil {
+		eMsg := "convert timeout error in .env file"
+		err = errors.Wrap(err, eMsg)
+		return nil, err
+	}
+
+	config = &DbConfig{
+		ConnString:  connStr,
+		MaxConns:    maxConns,
+		ConnTimeout: conTimeout,
+	}
+
+	return config, nil
 }
