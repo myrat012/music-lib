@@ -2,10 +2,12 @@ package http
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/myrat012/test-work-song-lib/internal/usecase"
 	"github.com/myrat012/test-work-song-lib/pkg/config"
+	"github.com/rs/zerolog/log"
 )
 
 func NewService(config config.AppConfig, useCases *usecase.UseCases) (*http.Server, error) {
@@ -14,4 +16,25 @@ func NewService(config config.AppConfig, useCases *usecase.UseCases) (*http.Serv
 		Handler: registerRouter(useCases),
 	}
 	return httpServer, nil
+}
+func GetRemoteAddress(r *http.Request) string {
+	if val := r.Header.Get("X-Forwarded-For"); val != "" {
+		return val
+	} else if val := r.Header.Get("X-Real-IP"); val != "" {
+		return val
+	} else {
+		ip, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			log.Error().Err(err).
+				Str("remote-addr", r.RemoteAddr).
+				Msg("error parsing remote address")
+			return "0.0.0.0"
+		}
+		return ip
+	}
+}
+
+func responseWithCodeAndMessage(w http.ResponseWriter, status int, message string) {
+	w.WriteHeader(status)
+	_, _ = fmt.Fprintln(w, message)
 }
