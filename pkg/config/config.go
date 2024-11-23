@@ -16,7 +16,17 @@ type DbConfig struct {
 	ConnTimeout int
 }
 
-func LoadEnv(filename string) (config *DbConfig, err error) {
+type AppConfig struct {
+	Host string
+	Port string
+}
+
+type Config struct {
+	DBConfig  *DbConfig
+	APPConfig *AppConfig
+}
+
+func LoadEnv(filename string) (config *Config, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		eMsg := "error reading .env file"
@@ -71,11 +81,15 @@ func LoadEnv(filename string) (config *DbConfig, err error) {
 		return nil, err
 	}
 
-	config = &DbConfig{
+	dbConf := &DbConfig{
 		ConnString:  connStr,
 		MaxConns:    maxConns,
 		ConnTimeout: conTimeout,
 	}
+	appConf := &AppConfig{
+		Host: os.Getenv("APP_HOST"),
+		Port: os.Getenv("APP_PORT"),
+	}
 
-	return config, nil
+	return &Config{DBConfig: dbConf, APPConfig: appConf}, nil
 }
