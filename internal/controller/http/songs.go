@@ -5,10 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
+	_ "github.com/myrat012/test-work-song-lib/internal/docs"
 	"github.com/myrat012/test-work-song-lib/internal/dto"
 	"github.com/myrat012/test-work-song-lib/internal/usecase"
 	"github.com/myrat012/test-work-song-lib/pkg/util"
 	"github.com/rs/zerolog"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type songsRouter struct {
@@ -23,8 +25,19 @@ func songsRegister(r *http.ServeMux, u usecase.SongsUseCase) {
 	r.HandleFunc("PUT /songs/{id}", d.update)
 	r.HandleFunc("GET /info", d.info)
 	r.HandleFunc("GET /songs/{id}/lyrics", d.lyrics)
+
+	r.Handle("/swagger/", httpSwagger.WrapHandler)
 }
 
+// Add godoc
+// @Summary      Добавление новой песни
+// @Description  Добавляет новую песню в библиотеку
+// @Tags         songs
+// @Accept       json
+// @Produce      json
+// @Param        song  body      dto.SongCreateRequest  true  "Данные песни"
+// @Success      200   {string}  string                 "Ok"
+// @Router       /songs [post]
 func (route *songsRouter) add(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	zLog := zerolog.Ctx(ctx).With().
@@ -49,6 +62,13 @@ func (route *songsRouter) add(w http.ResponseWriter, r *http.Request) {
 	responseWithCodeAndMessage(w, http.StatusOK, "Ok")
 }
 
+// Delete godoc
+// @Summary      Удаление песни
+// @Description  Удаляет песню по её идентификатору
+// @Tags         songs
+// @Param        id   path      int     true  "Идентификатор песни"
+// @Success      200  {string}  string  "Ok"
+// @Router       /songs/{id} [delete]
 func (route *songsRouter) delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	zLog := zerolog.Ctx(ctx).With().
@@ -99,6 +119,18 @@ func (route *songsRouter) update(w http.ResponseWriter, r *http.Request) {
 	responseWithCodeAndMessage(w, http.StatusOK, "Ok")
 }
 
+// GetInfo godoc
+// @Summary      Получение песни
+// @Description  Возвращает песни с поддержкой пагинации
+// @Tags         songs
+// @Accept       json
+// @Produce      json
+// @Param        group  query   string  false   "Название группы"
+// @Param        song   query   string  false   "Название песни"
+// @Param        page   query  int  true  "Номер страницы (по умолчанию 1)"
+// @Param        limit  query  int  true  "Количество куплетов на странице (по умолчанию 2)"
+// @Success      200    {object}  []model.Song
+// @Router       /info [get]
 func (route *songsRouter) info(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	zLog := zerolog.Ctx(ctx).With().
@@ -126,6 +158,17 @@ func (route *songsRouter) info(w http.ResponseWriter, r *http.Request) {
 	jsonResponseWithCode(http.StatusOK, w, a)
 }
 
+// GetLyrics godoc
+// @Summary      Получение текста песни
+// @Description  Возвращает текст песни с поддержкой пагинации по куплетам
+// @Tags         songs
+// @Accept       json
+// @Produce      json
+// @Param        id     path   int  true  "ID песни"
+// @Param        page   query  int  true  "Номер страницы (по умолчанию 1)"
+// @Param        limit  query  int  true  "Количество куплетов на странице (по умолчанию 2)"
+// @Success      200    {object}    []string
+// @Router       /songs/{id}/lyrics [get]
 func (route *songsRouter) lyrics(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	zLog := zerolog.Ctx(ctx).With().

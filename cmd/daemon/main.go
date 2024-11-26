@@ -18,6 +18,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// @title        Online Music Library API
+// @version      1.0
+// @description  REST API для управления онлайн-библиотекой песен.
+
 func main() {
 	// logger
 	pwd, _ := os.Getwd()
