@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -37,4 +38,13 @@ func GetRemoteAddress(r *http.Request) string {
 func responseWithCodeAndMessage(w http.ResponseWriter, status int, message string) {
 	w.WriteHeader(status)
 	_, _ = fmt.Fprintln(w, message)
+}
+
+func jsonResponseWithCode(httpStatusCode int, w http.ResponseWriter, response interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(httpStatusCode)
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		log.Err(err).Msg("error in json.Encode")
+	}
 }
