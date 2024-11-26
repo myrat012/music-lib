@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"strings"
 
 	"github.com/myrat012/test-work-song-lib/internal/dto"
 	"github.com/myrat012/test-work-song-lib/internal/model"
@@ -84,17 +85,37 @@ func (uc *SongsUseCase) Info(ctx context.Context, getRequest *dto.SongGetRequest
 		Str("unit", "internal.usecase.SongsUseCase").
 		Str("method", "Info").Logger()
 
-	if getRequest.Page <= 0 {
-		getRequest.Page = 1
-	}
-	if getRequest.Limit <= 0 {
-		getRequest.Limit = 10
-	}
-
 	a, err := uc.songsRepo.GetByFields(ctx, getRequest)
 	if err != nil {
 		zLog.Err(err).Msg("SongsUseCase - error processing uc.repo.GetByFields")
 		return nil, err
 	}
 	return a, nil
+}
+
+func (uc *SongsUseCase) GetSongText(ctx context.Context, id, page, limit int) ([]string, error) {
+	zLog := zerolog.Ctx(ctx).With().
+		Str("unit", "internal.usecase.SongsUseCase").
+		Str("method", "GetSongText").Logger()
+
+	song, err := uc.songsRepo.GetById(ctx, id)
+	if err != nil {
+		zLog.Err(err).Msg("SongsUseCase - error processing uc.repo.GetById")
+		return nil, err
+	}
+	if song == nil {
+		zLog.Info().Msg("SongsUseCase - song not found")
+		return nil, nil
+	}
+
+	sp := strings.Split(song.Text, "\n\n")
+	if page >= len(sp) {
+		return []string{}, nil
+	}
+	end := page + limit
+	if end > len(sp) {
+		end = len(sp)
+	}
+
+	return sp[page:end], nil
 }

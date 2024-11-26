@@ -7,6 +7,7 @@ import (
 
 	"github.com/myrat012/test-work-song-lib/internal/dto"
 	"github.com/myrat012/test-work-song-lib/internal/usecase"
+	"github.com/myrat012/test-work-song-lib/pkg/util"
 	"github.com/rs/zerolog"
 )
 
@@ -21,6 +22,7 @@ func songsRegister(r *http.ServeMux, u usecase.SongsUseCase) {
 	r.HandleFunc("DELETE /songs/{id}", d.delete)
 	r.HandleFunc("PUT /songs/{id}", d.update)
 	r.HandleFunc("GET /info", d.info)
+	r.HandleFunc("GET /songs/{id}/lyrics", d.lyrics)
 }
 
 func (route *songsRouter) add(w http.ResponseWriter, r *http.Request) {
@@ -113,6 +115,8 @@ func (route *songsRouter) info(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	getRequest.Page, getRequest.Limit = util.PageToLimitOffset(getRequest.Page, getRequest.Limit)
+
 	a, err := route.u.Info(ctx, getRequest)
 	if err != nil {
 		responseWithCodeAndMessage(w, http.StatusBadRequest, "invalid request")
@@ -120,4 +124,44 @@ func (route *songsRouter) info(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponseWithCode(http.StatusOK, w, a)
+}
+
+func (route *songsRouter) lyrics(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	zLog := zerolog.Ctx(ctx).With().
+		Str("remote-addr", GetRemoteAddress(r)).
+		Str("uri", r.RequestURI).
+		Str("method", r.Method).
+		Str("handle", "SongLyrics").Logger()
+
+	vars := r.PathValue("id")
+	id, err := strconv.Atoi(vars)
+	if err != nil {
+		zLog.Err(err).Msg("format is wrong")
+		responseWithCodeAndMessage(w, http.StatusBadRequest, "invalid request")
+		return
+	}
+	p, err := strconv.Atoi(r.URL.Query().Get("page"))
+	if err != nil {
+		zLog.Err(err).Msg("format is wrong")
+		responseWithCodeAndMessage(w, http.StatusBadRequest, "invalid request")
+		return
+	}
+	l, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		zLog.Err(err).Msg("format is wrong")
+		responseWithCodeAndMessage(w, http.StatusBadRequest, "invalid request")
+		return
+	}
+
+	page, limit := util.PageToLimitOffset(p, l)
+
+	sp, err := route.u.GetSongText(ctx, id, page, limit)
+	if err != nil {
+		zLog.Err(err).Msg("SongsUseCase - error processing uc.repo.GetSongText")
+		responseWithCodeAndMessage(w, http.StatusInternalServerError, "error processing uc.repo.GetSongText")
+		return
+	}
+
+	jsonResponseWithCode(http.StatusOK, w, sp)
 }

@@ -90,7 +90,6 @@ func (r *SongsRepo) GetByFields(ctx context.Context, getRequest *dto.SongGetRequ
 		Str("unit", "internal.usecase.repo.SongsRepo").
 		Str("method", "GetByFields").Logger()
 
-	offset := (getRequest.Page - 1) * getRequest.Limit
 	sqlCommand := fmt.Sprintf("SELECT id, group_song, song, release_date, text, link FROM %s WHERE ", model.TBL_NAME)
 
 	var filters []string
@@ -116,7 +115,7 @@ func (r *SongsRepo) GetByFields(ctx context.Context, getRequest *dto.SongGetRequ
 	}
 
 	sqlCommand += fmt.Sprintf(" LIMIT $%d OFFSET $%d;", argIx, argIx+1)
-	args = append(args, getRequest.Limit, offset)
+	args = append(args, getRequest.Limit, getRequest.Page)
 
 	rows, err := r.Query(ctx, sqlCommand, args...)
 	if err != nil {
